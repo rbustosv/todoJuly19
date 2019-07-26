@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom";
+import axios from "axios";
 
 import "./styles.css";
 import TodoItem from "./todoItem";
@@ -13,9 +14,22 @@ class App extends React.Component {
     };
   }
 
+  componentDidMount(){
+    fetch("http://rsbv-todo-list-api.herokuapp.com/todos")
+     .then(response => response.json())
+     .then(data => this.setState({ todos: data}));
+  }
+
+
   renderTodos = () => {
-    return this.state.todos.map((todo, index) => {
-      return <TodoItem title={todo} key={index} />;
+    return this.state.todos.map(todo => {
+      return (
+      <TodoItem 
+      key={todo.id} 
+      todoItem={todo}
+      deleteItem={this.deleteItem}
+      />
+      );
     });
   };
 
@@ -27,12 +41,41 @@ class App extends React.Component {
 
   handleSubmit = event => {
     event.preventDefault();
-    this.setState({
-      //pushing  (spreading) todo elements into the array
-      todos: [...this.state.todos, this.state.todo],
-      todo: "" //cleaning text area
-    });
+    axios({
+      method: "post",
+      url: "http://rsbv-todo-list-api.herokuapp.com/add-todo",
+      headers: { "content-type": "application/json"},
+      data: {
+        title: this.state.todo,
+        done: false
+      }
+    })
+    .then(data => {
+      this.setState({
+        //pushing  (spreading) todo elements into the array
+        todos: [...this.state.todos, data.data],
+        todo: "" //cleaning text area
+      });
+
+    })
+    .catch(error => console.log(error));
+
   };
+
+  deleteItem = id => {
+    fetch(`http://rsbv-todo-list-api.herokuapp.com/todo/${id}`,{
+      method: "DELETE"
+    })
+    .then(
+     this.setState({
+       todos: this.state.todos.filter(item => {
+         return item.id !== id//updating content showing records ignoring id deleted
+       })
+     })
+    )
+
+  }
+
 
   render() {
     return (
